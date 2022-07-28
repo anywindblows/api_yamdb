@@ -7,56 +7,58 @@ User = get_user_model()
 
 
 class Category(models.Model):
-    name = models.CharField(max_length=256, verbose_name='Название')
-    slug = models.SlugField(max_length=50, unique=True, verbose_name='slug')
+    name = models.CharField(max_length=50)
+    slug = models.SlugField(max_length=50, unique=True)
 
     class Meta:
         verbose_name = 'Категория'
-        verbose_name_plural = 'Категории'
 
     def __str__(self):
         return self.name
 
 
 class Genre(models.Model):
-    name = models.CharField(max_length=256, verbose_name='Название')
-    slug = models.SlugField(max_length=50, unique=True, verbose_name='slug')
+    name = models.CharField(max_length=50)
+    slug = models.SlugField(max_length=50, unique=True)
 
     class Meta:
         verbose_name = 'Жанр'
-        verbose_name_plural = 'Жанры'
 
     def __str__(self):
         return self.name
 
 
 class Title(models.Model):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=50)
     year = models.IntegerField(
-        validators=[MaxValueValidator(timezone.now().year)],
-        verbose_name='Год'
+        validators=[
+            MaxValueValidator(timezone.now().year)
+        ]
     )
+    description = models.TextField(max_length=500)
     category = models.ForeignKey(
         Category,
         null=True,
         blank=True,
-        related_name='category',
-        verbose_name='Категория',
+        related_name='titles',
         on_delete=models.SET_NULL,
     )
-    description = models.TextField(blank=True)
     genre = models.ManyToManyField(
         Genre,
-        related_name='genre',
-        verbose_name='Жанр'
+        related_name='titles',
     )
-
+      
     class Meta:
-        verbose_name = 'Произведение'
-        verbose_name_plural = 'Произведения'
+        verbose_name = 'Тайтл'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['name', 'year'],
+                name='unique_title'
+            )
+        ]
 
     def __str__(self):
-        return f'{self.name} {self.year}'
+        return self.name
 
 
 class Reviews(models.Model):
