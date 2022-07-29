@@ -5,13 +5,13 @@ from reviews.models import Category, Comments, Genre, Reviews, Title
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
-        fields = ('name', 'slug')
+        fields = '__all__'
         model = Category
 
 
 class GenreSerializer(serializers.ModelSerializer):
     class Meta:
-        fields = ('name', 'slug')
+        fields = '__all__'
         model = Genre
 
 
