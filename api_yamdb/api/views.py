@@ -77,6 +77,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         review = get_object_or_404(Reviews, id=self.kwargs.get('review_id'))
         serializer.save(author=self.request.user, review=review)
 
+
 class UserViewSet(viewsets.ModelViewSet):
     """Класс пользователей."""
     queryset = User.objects.all()
