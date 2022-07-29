@@ -12,6 +12,7 @@ class Category(models.Model):
 
     class Meta:
         verbose_name = 'Категория'
+        verbose_name_plural = 'Категории'
 
     def __str__(self):
         return self.name
@@ -23,6 +24,7 @@ class Genre(models.Model):
 
     class Meta:
         verbose_name = 'Жанр'
+        verbose_name_plural = 'Жанры'
 
     def __str__(self):
         return self.name
@@ -35,7 +37,7 @@ class Title(models.Model):
             MaxValueValidator(timezone.now().year)
         ]
     )
-    description = models.TextField(max_length=500)
+    description = models.TextField(max_length=500, blank=True)
     category = models.ForeignKey(
         Category,
         null=True,
@@ -43,6 +45,7 @@ class Title(models.Model):
         related_name='titles',
         on_delete=models.SET_NULL,
     )
+
     genre = models.ManyToManyField(
         Genre,
         related_name='titles',
@@ -50,6 +53,7 @@ class Title(models.Model):
 
     class Meta:
         verbose_name = 'Тайтл'
+        verbose_name_plural = 'Тайтлы'
         constraints = [
             models.UniqueConstraint(
                 fields=['name', 'year'],
