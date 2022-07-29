@@ -47,7 +47,7 @@ class Title(models.Model):
         Genre,
         related_name='titles',
     )
-      
+
     class Meta:
         verbose_name = 'Тайтл'
         constraints = [
