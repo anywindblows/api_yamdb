@@ -8,25 +8,28 @@ from users.models import User
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
-        fields = '__all__'
+        fields = ('name', 'slug')
         model = Category
 
 
 class GenreSerializer(serializers.ModelSerializer):
     class Meta:
-        fields = '__all__'
+        fields = ('name', 'slug')
         model = Genre
 
 
 class TitleSerializer(serializers.ModelSerializer):
-    genre = GenreSerializer(read_only=True, many=True)
+    genre = GenreSerializer(
+        read_only=True,
+        many=True
+    )
     category = CategorySerializer(read_only=True)
     rating = serializers.SerializerMethodField()
 
     class Meta:
         model = Title
-        fields = ('id', 'name', 'year', 'description',
-                  'genre', 'category', 'rating')
+        fields = ('id', 'name', 'year', 'rating', 'description',
+                  'genre', 'category')
         read_only_fields = ('id',)
 
     def get_rating(self, obj):

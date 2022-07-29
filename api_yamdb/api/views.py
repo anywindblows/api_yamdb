@@ -1,11 +1,16 @@
 from rest_framework import permissions, status, viewsets
+from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
-
+from rest_framework.pagination import PageNumberPagination
+from rest_framework import filters
+from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
+                                   ListModelMixin)
+from rest_framework.viewsets import GenericViewSet
 
 from .permissions import IsAdmin, IsAuthorOrReadOnly, IsModerator, ReadOnly
 from .serializers import (
@@ -23,6 +28,7 @@ from .serializers import (
 
 from reviews.models import Category, Comments, Genre, Reviews, Title
 from users.models import User
+from .filters import TitleFilter
 
 
 class CreateListDestroyViewSet(viewsets.ModelViewSet):
@@ -32,19 +38,34 @@ class CreateListDestroyViewSet(viewsets.ModelViewSet):
     lookup_field = 'slug'
 
 
-class CategoryViewSet(CreateListDestroyViewSet):
+class CategoryViewSet(CreateModelMixin, ListModelMixin,
+                      DestroyModelMixin, GenericViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    permission_classes = (IsAdmin | ReadOnly,)
+    pagination_class = PageNumberPagination
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('name',)
+    lookup_field = 'slug'
 
 
-class GenresViewSet(CreateListDestroyViewSet):
+class GenresViewSet(CreateModelMixin, ListModelMixin,
+                    DestroyModelMixin, GenericViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
+    permission_classes = (IsAdmin | ReadOnly,)
+    pagination_class = PageNumberPagination
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('name',)
+    lookup_field = 'slug'
 
 
 class TitleViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'patch', 'delete']
     permission_classes = (IsAdmin | ReadOnly,)
+    pagination_class = PageNumberPagination
+    filter_backends = (DjangoFilterBackend, filters.SearchFilter)
+    filterset_class = TitleFilter
 
     queryset = Title.objects.all()
 
