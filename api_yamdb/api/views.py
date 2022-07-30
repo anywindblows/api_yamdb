@@ -1,15 +1,19 @@
-from rest_framework import permissions, status, viewsets
-from django_filters.rest_framework import DjangoFilterBackend
-from django.shortcuts import get_object_or_404
-from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
-from rest_framework.decorators import action, api_view, permission_classes
+from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+from django.contrib.auth.tokens import default_token_generator
+
 from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework.pagination import PageNumberPagination
-from rest_framework import filters
-from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
-                                   ListModelMixin)
+from rest_framework import permissions, status, viewsets, filters
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.mixins import (
+    CreateModelMixin,
+    DestroyModelMixin,
+    ListModelMixin
+)
 from rest_framework.viewsets import GenericViewSet
 
 from .permissions import IsAdmin, IsAuthorOrReadOnly, IsModerator, ReadOnly
@@ -26,7 +30,7 @@ from .serializers import (
     UserSerializer
 )
 
-from reviews.models import Category, Comments, Genre, Reviews, Title
+from reviews.models import Category, Comments, Genre, Review, Title
 from users.models import User
 from .filters import TitleFilter
 
@@ -78,24 +82,33 @@ class TitleViewSet(viewsets.ModelViewSet):
 class ReviewsViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'patch', 'delete']
     permission_classes = (IsAdmin | IsModerator | IsAuthorOrReadOnly,)
-
-    queryset = Reviews.objects.all()
     serializer_class = ReviewsSerializer
+
+    def get_queryset(self):
+        title = get_object_or_404(Title, id=self.kwargs.get('title_id'))
+        return title.reviews.all()
 
     def perform_create(self, serializer):
         title = get_object_or_404(Title, id=self.kwargs.get('title_id'))
+        if Review.objects.filter(author=self.request.user,
+                                 title=title).exists():
+            raise ValidationError('Нельзя оставлять больше одного отзыва!')
         serializer.save(author=self.request.user, title=title)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'patch', 'delete']
     permission_classes = (IsAdmin | IsModerator | IsAuthorOrReadOnly,)
-
-    queryset = Comments.objects.all()
     serializer_class = CommentsSerializer
 
+    def get_obj_review(self):
+        return get_object_or_404(Review, id=self.kwargs.get('review_id'))
+
+    def get_queryset(self):
+        return Comments.objects.filter(review_id=self.get_obj_review().id)
+
     def perform_create(self, serializer):
-        review = get_object_or_404(Reviews, id=self.kwargs.get('review_id'))
+        review = get_object_or_404(Review, id=self.kwargs.get('review_id'))
         serializer.save(author=self.request.user, review=review)
 
 
