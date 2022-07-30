@@ -7,8 +7,8 @@ User = get_user_model()
 
 
 class Category(models.Model):
-    name = models.CharField(max_length=256, verbose_name='Название')
-    slug = models.SlugField(max_length=50, unique=True, verbose_name='slug')
+    name = models.CharField(max_length=50)
+    slug = models.SlugField(max_length=50, unique=True)
 
     class Meta:
         verbose_name = 'Категория'
@@ -19,8 +19,8 @@ class Category(models.Model):
 
 
 class Genre(models.Model):
-    name = models.CharField(max_length=256, verbose_name='Название')
-    slug = models.SlugField(max_length=50, unique=True, verbose_name='slug')
+    name = models.CharField(max_length=50)
+    slug = models.SlugField(max_length=50, unique=True)
 
     class Meta:
         verbose_name = 'Жанр'
@@ -31,35 +31,41 @@ class Genre(models.Model):
 
 
 class Title(models.Model):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=50)
     year = models.IntegerField(
-        validators=[MaxValueValidator(timezone.now().year)],
-        verbose_name='Год'
+        validators=[
+            MaxValueValidator(timezone.now().year)
+        ]
     )
+    description = models.TextField(blank=True)
     category = models.ForeignKey(
         Category,
         null=True,
         blank=True,
-        related_name='category',
-        verbose_name='Категория',
+        related_name='titles',
         on_delete=models.SET_NULL,
     )
-    description = models.TextField(blank=True)
+
     genre = models.ManyToManyField(
         Genre,
-        related_name='genre',
-        verbose_name='Жанр'
+        related_name='titles',
     )
 
     class Meta:
-        verbose_name = 'Произведение'
-        verbose_name_plural = 'Произведения'
+        verbose_name = 'Тайтл'
+        verbose_name_plural = 'Тайтлы'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['name', 'year'],
+                name='unique_title'
+            )
+        ]
 
     def __str__(self):
-        return f'{self.name} {self.year}'
+        return self.name
 
 
-class Reviews(models.Model):
+class Review(models.Model):
     title = models.ForeignKey(Title,
                               on_delete=models.CASCADE,
                               related_name='reviews')
@@ -93,7 +99,7 @@ class Reviews(models.Model):
 
 
 class Comments(models.Model):
-    review = models.ForeignKey(Reviews, on_delete=models.CASCADE)
+    review = models.ForeignKey(Review, on_delete=models.CASCADE)
     text = models.TextField()
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
