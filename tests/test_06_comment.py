@@ -74,6 +74,7 @@ class Test06CommentAPI:
             'возвращает статус 200'
         )
         data = response.json()
+
         assert 'count' in data, (
             'Проверьте, что при GET запросе `/api/v1/titles/{title_id}/reviews/{review_id}/comments/` '
             'возвращаете данные с пагинацией. Не найден параметр `count`'

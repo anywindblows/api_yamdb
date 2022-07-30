@@ -37,7 +37,7 @@ class Title(models.Model):
             MaxValueValidator(timezone.now().year)
         ]
     )
-    description = models.TextField(max_length=500, blank=True)
+    description = models.TextField(blank=True)
     category = models.ForeignKey(
         Category,
         null=True,
@@ -65,7 +65,7 @@ class Title(models.Model):
         return self.name
 
 
-class Reviews(models.Model):
+class Review(models.Model):
     title = models.ForeignKey(Title,
                               on_delete=models.CASCADE,
                               related_name='reviews')
@@ -99,7 +99,7 @@ class Reviews(models.Model):
 
 
 class Comments(models.Model):
-    review = models.ForeignKey(Reviews, on_delete=models.CASCADE)
+    review = models.ForeignKey(Review, on_delete=models.CASCADE)
     text = models.TextField()
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)

@@ -5,7 +5,7 @@ from django.db import IntegrityError
 from django.core.management.base import BaseCommand
 
 from users.models import User
-from reviews.models import Category, Comments, Genre, Title, Reviews
+from reviews.models import Category, Comments, Genre, Title, Review
 
 ABS_PATH = os.path.abspath('')
 
@@ -14,7 +14,7 @@ MODELS = {
     Category: 'category.csv',
     Title: 'titles.csv',
     Genre: 'genre.csv',
-    Reviews: 'review.csv',
+    Review: 'review.csv',
     Comments: 'comments.csv',
 }
 
