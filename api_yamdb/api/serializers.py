@@ -88,12 +88,6 @@ class CommentsSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(
-        validators=[
-            UniqueValidator(queryset=User.objects.all())
-        ],
-        required=True,
-    )
     email = serializers.EmailField(
         validators=[
             UniqueValidator(queryset=User.objects.all())
@@ -104,6 +98,12 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ("username", "email", "first_name",
                   "last_name", "bio", "role")
         model = User
+
+    def validate(self, data):
+        if data.get('username') == 'me':
+            raise serializers.ValidationError(
+                'Username указан неверно!')
+        return data
 
 
 class UserEditSerializer(serializers.ModelSerializer):

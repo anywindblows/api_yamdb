@@ -120,10 +120,10 @@ class UserViewSet(viewsets.ModelViewSet):
     search_fields = ('username',)
     lookup_field = "username"
 
-    @action(  # Помимо GET-запроса разрешаем другие методы
+    @action(
         methods=['GET', 'PATCH'],
-        detail=False,  # разрешена работа с коллекцией
-        url_path="me",  # URL эндпоинта не должен совпадать с именем метода
+        detail=False,
+        url_path="me",
         permission_classes=[permissions.IsAuthenticated],
         serializer_class=UserEditSerializer,
     )
@@ -135,23 +135,14 @@ class UserViewSet(viewsets.ModelViewSet):
         if request.method == "GET":
             serializer = self.get_serializer(user)
             return Response(serializer.data, status=status.HTTP_200_OK)
-        if request.method == "PATCH":
-            serializer = self.get_serializer(
-                user,
-                data=request.data,
-                partial=True
-            )
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            # Возвращаем JSON со всеми данными нового объекта
-            # и статус-код 200
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        # Если данные не прошли валидацию, то возвращаем
-        # информацию об ошибках и соответствующий статус-код:
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-# View-функция register() будет обрабатывать только запросы POST,
-# запросы других типов будут отклонены
+        serializer = self.get_serializer(
+            user,
+            data=request.data,
+            partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(["POST"])
