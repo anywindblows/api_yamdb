@@ -35,7 +35,8 @@ class Title(models.Model):
     year = models.IntegerField(
         validators=[
             MaxValueValidator(timezone.now().year)
-        ]
+        ],
+        db_index=True
     )
     description = models.TextField(blank=True)
     category = models.ForeignKey(
@@ -60,6 +61,7 @@ class Title(models.Model):
                 name='unique_title'
             )
         ]
+        ordering = ['-year']
 
     def __str__(self):
         return self.name
