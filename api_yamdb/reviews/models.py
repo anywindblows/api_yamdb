@@ -66,10 +66,13 @@ class Title(models.Model):
 
 
 class Review(models.Model):
-    title = models.ForeignKey(Title,
-                              on_delete=models.CASCADE,
-                              related_name='reviews')
-    text = models.TextField()
+    title = models.ForeignKey(
+        Title,
+        on_delete=models.CASCADE,
+        related_name='reviews',
+        verbose_name='Произведение'
+    )
+    text = models.TextField(verbose_name='Текст')
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -80,29 +83,40 @@ class Review(models.Model):
         validators=[
             MinValueValidator(1),
             MaxValueValidator(10)
-        ]
+        ],
+        verbose_name='Рейтинг'
     )
-    pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
+    pub_date = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата публикации'
+    )
 
     class Meta:
         verbose_name = 'Отзыв'
-        verbose_name_plural = 'Отзывы'
-        constraints = (
-            models.UniqueConstraint(
-                fields=('author', 'title'),
-                name='unique_reviewing',
-            ),
-        )
+        verbose_name_plural = 'Отзывы',
+        unique_together = ['author', 'title']
 
     def __str__(self):
         return f'{self.title} {self.text} {self.author} {self.score}'
 
 
 class Comments(models.Model):
-    review = models.ForeignKey(Review, on_delete=models.CASCADE)
-    text = models.TextField()
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
-    pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
+    review = models.ForeignKey(
+        Review,
+        on_delete=models.CASCADE,
+        verbose_name='Отзыв',
+        related_name='comments'
+    )
+    text = models.TextField(verbose_name='Текст')
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Автор'
+    )
+    pub_date = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата публикации'
+    )
 
     class Meta:
         verbose_name = 'Комментарий'

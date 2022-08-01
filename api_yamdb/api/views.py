@@ -90,9 +90,6 @@ class ReviewsViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         title = get_object_or_404(Title, id=self.kwargs.get('title_id'))
-        if Review.objects.filter(author=self.request.user,
-                                 title=title).exists():
-            raise ValidationError('Нельзя оставлять больше одного отзыва!')
         serializer.save(author=self.request.user, title=title)
 
 
@@ -101,14 +98,16 @@ class CommentViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAdmin | IsModerator | IsAuthorOrReadOnly,)
     serializer_class = CommentsSerializer
 
-    def get_obj_review(self):
-        return get_object_or_404(Review, id=self.kwargs.get('review_id'))
-
     def get_queryset(self):
-        return Comments.objects.filter(review_id=self.get_obj_review().id)
+        review = get_object_or_404(Review, id=self.kwargs.get('review_id'),
+                                   title_id=self.kwargs.get('title_id'))
+        return review.comments.all()
 
     def perform_create(self, serializer):
-        review = get_object_or_404(Review, id=self.kwargs.get('review_id'))
+        review = get_object_or_404(
+            Review, id=self.kwargs.get('review_id'),
+            title_id=self.kwargs.get('title_id')
+        )
         serializer.save(author=self.request.user, review=review)
 
 
@@ -149,6 +148,7 @@ class UserViewSet(viewsets.ModelViewSet):
         # Если данные не прошли валидацию, то возвращаем
         # информацию об ошибках и соответствующий статус-код:
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
 
 # View-функция register() будет обрабатывать только запросы POST,
 # запросы других типов будут отклонены
@@ -197,7 +197,7 @@ def get_jwt_token(request):
     )
 
     if default_token_generator.check_token(
-        user, serializer.validated_data["confirmation_code"]
+            user, serializer.validated_data["confirmation_code"]
     ):
         token = AccessToken.for_user(user)
         return Response({"token": str(token)}, status=status.HTTP_200_OK)
