@@ -1,10 +1,10 @@
 from django.core.mail import send_mail
+from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth.tokens import default_token_generator
 
 from rest_framework.response import Response
-from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework.pagination import PageNumberPagination
 from rest_framework import permissions, status, viewsets, filters
@@ -16,8 +16,13 @@ from rest_framework.mixins import (
 )
 from rest_framework.viewsets import GenericViewSet
 
-from .permissions import IsAdmin, IsAuthorOrReadOnly, IsModerator, ReadOnly
-from .serializers import (
+from api.v1.permissions import (
+    IsAdmin,
+    IsAuthorOrReadOnly,
+    IsModerator,
+    ReadOnly
+)
+from api.v1.serializers import (
     CategorySerializer,
     CommentsSerializer,
     CreateTitleSerializer,
@@ -30,9 +35,9 @@ from .serializers import (
     UserSerializer
 )
 
-from reviews.models import Category, Comments, Genre, Review, Title
+from reviews.models import Category, Genre, Review, Title
 from users.models import User
-from .filters import TitleFilter
+from api.v1.filters import TitleFilter
 
 
 class CreateListDestroyViewSet(viewsets.ModelViewSet):
@@ -71,7 +76,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend, filters.SearchFilter)
     filterset_class = TitleFilter
 
-    queryset = Title.objects.all()
+    queryset = Title.objects.all().annotate(rating=Avg('reviews__score'))
 
     def get_serializer_class(self):
         if self.action in ('partial_update', 'create'):
@@ -90,9 +95,6 @@ class ReviewsViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         title = get_object_or_404(Title, id=self.kwargs.get('title_id'))
-        if Review.objects.filter(author=self.request.user,
-                                 title=title).exists():
-            raise ValidationError('Нельзя оставлять больше одного отзыва!')
         serializer.save(author=self.request.user, title=title)
 
 
@@ -101,14 +103,16 @@ class CommentViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAdmin | IsModerator | IsAuthorOrReadOnly,)
     serializer_class = CommentsSerializer
 
-    def get_obj_review(self):
-        return get_object_or_404(Review, id=self.kwargs.get('review_id'))
-
     def get_queryset(self):
-        return Comments.objects.filter(review_id=self.get_obj_review().id)
+        review = get_object_or_404(Review, id=self.kwargs.get('review_id'),
+                                   title_id=self.kwargs.get('title_id'))
+        return review.comments.all()
 
     def perform_create(self, serializer):
-        review = get_object_or_404(Review, id=self.kwargs.get('review_id'))
+        review = get_object_or_404(
+            Review, id=self.kwargs.get('review_id'),
+            title_id=self.kwargs.get('title_id')
+        )
         serializer.save(author=self.request.user, review=review)
 
 
@@ -120,10 +124,10 @@ class UserViewSet(viewsets.ModelViewSet):
     search_fields = ('username',)
     lookup_field = "username"
 
-    @action(  # Помимо GET-запроса разрешаем другие методы
+    @action(
         methods=['GET', 'PATCH'],
-        detail=False,  # разрешена работа с коллекцией
-        url_path="me",  # URL эндпоинта не должен совпадать с именем метода
+        detail=False,
+        url_path="me",
         permission_classes=[permissions.IsAuthenticated],
         serializer_class=UserEditSerializer,
     )
@@ -135,23 +139,14 @@ class UserViewSet(viewsets.ModelViewSet):
         if request.method == "GET":
             serializer = self.get_serializer(user)
             return Response(serializer.data, status=status.HTTP_200_OK)
-        if request.method == "PATCH":
-            serializer = self.get_serializer(
-                user,
-                data=request.data,
-                partial=True
-            )
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            # Возвращаем JSON со всеми данными нового объекта
-            # и статус-код 200
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        # Если данные не прошли валидацию, то возвращаем
-        # информацию об ошибках и соответствующий статус-код:
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-# View-функция register() будет обрабатывать только запросы POST,
-# запросы других типов будут отклонены
+        serializer = self.get_serializer(
+            user,
+            data=request.data,
+            partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(["POST"])
@@ -197,7 +192,7 @@ def get_jwt_token(request):
     )
 
     if default_token_generator.check_token(
-        user, serializer.validated_data["confirmation_code"]
+            user, serializer.validated_data["confirmation_code"]
     ):
         token = AccessToken.for_user(user)
         return Response({"token": str(token)}, status=status.HTTP_200_OK)

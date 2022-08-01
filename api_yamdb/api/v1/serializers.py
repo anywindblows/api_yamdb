@@ -8,13 +8,13 @@ from users.models import User
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
-        fields = ('name', 'slug')
+        exclude = ['id']
         model = Category
 
 
 class GenreSerializer(serializers.ModelSerializer):
     class Meta:
-        fields = ('name', 'slug')
+        exclude = ['id']
         model = Genre
 
 
@@ -24,20 +24,13 @@ class TitleSerializer(serializers.ModelSerializer):
         many=True
     )
     category = CategorySerializer(read_only=True)
-    rating = serializers.SerializerMethodField()
+    rating = serializers.IntegerField(required=False)
 
     class Meta:
         model = Title
         fields = ('id', 'name', 'year', 'rating', 'description',
                   'genre', 'category')
         read_only_fields = ('id',)
-
-    def get_rating(self, obj):
-        try:
-            rating = obj.reviews.aggregate(Avg('score'))
-            return rating.get('score__avg')
-        except TypeError:
-            return None
 
 
 class CreateTitleSerializer(serializers.ModelSerializer):
@@ -75,6 +68,19 @@ class ReviewsSerializer(serializers.ModelSerializer):
         fields = ('id', 'text', 'author', 'score', 'pub_date')
         model = Review
 
+    def validate(self, data):
+        if self.context['request'].method != 'POST':
+            return data
+
+        title_id = self.context['view'].kwargs.get('title_id')
+        author = self.context['request'].user
+        if Review.objects.filter(
+                author=author, title=title_id).exists():
+            raise serializers.ValidationError(
+                'Вы уже написали отзыв к этому произведению.'
+            )
+        return data
+
 
 class CommentsSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
@@ -88,15 +94,21 @@ class CommentsSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(
-        validators=[
-            UniqueValidator(queryset=User.objects.all())
-        ],
-        required=True,
-    )
     email = serializers.EmailField(
         validators=[
-            UniqueValidator(queryset=User.objects.all())
+            UniqueValidator(
+                queryset=User.objects.all(),
+                message='Пользователь с данным "email" уже существует.'
+            )
+        ]
+    )
+
+    username = serializers.CharField(
+        validators=[
+            UniqueValidator(
+                queryset=User.objects.all(),
+                message='Пользователь с данным "username" уже существует.'
+            )
         ]
     )
 
