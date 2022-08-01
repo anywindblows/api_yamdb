@@ -7,8 +7,8 @@ User = get_user_model()
 
 
 class Category(models.Model):
-    name = models.CharField(max_length=50)
-    slug = models.SlugField(max_length=50, unique=True)
+    name = models.CharField(max_length=50, verbose_name='Название')
+    slug = models.SlugField(max_length=50, unique=True, verbose_name='Слаг')
 
     class Meta:
         verbose_name = 'Категория'
@@ -19,8 +19,8 @@ class Category(models.Model):
 
 
 class Genre(models.Model):
-    name = models.CharField(max_length=50)
-    slug = models.SlugField(max_length=50, unique=True)
+    name = models.CharField(max_length=50, verbose_name='Название')
+    slug = models.SlugField(max_length=50, unique=True, verbose_name='Слаг')
 
     class Meta:
         verbose_name = 'Жанр'
@@ -31,24 +31,28 @@ class Genre(models.Model):
 
 
 class Title(models.Model):
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=50, verbose_name='Название')
     year = models.IntegerField(
         validators=[
             MaxValueValidator(timezone.now().year)
-        ]
+        ],
+        db_index=True,
+        verbose_name='Год'
     )
-    description = models.TextField(blank=True)
+    description = models.TextField(blank=True, verbose_name='Описание')
     category = models.ForeignKey(
         Category,
         null=True,
         blank=True,
         related_name='titles',
         on_delete=models.SET_NULL,
+        verbose_name='Категория'
     )
 
     genre = models.ManyToManyField(
         Genre,
         related_name='titles',
+        verbose_name='Жанр'
     )
 
     class Meta:
@@ -60,6 +64,7 @@ class Title(models.Model):
                 name='unique_title'
             )
         ]
+        ordering = ['-year']
 
     def __str__(self):
         return self.name
