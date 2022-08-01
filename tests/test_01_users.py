@@ -149,6 +149,9 @@ class Test01UserAPI:
             'role': 'user'
         }
         response = admin_client.post('/api/v1/users/', data=no_username_data)
+        print('******************************************')
+        print(response.status_code)
+        print('******************************************')
         assert response.status_code == 400, (
             'Проверьте, что при POST запросе `/api/v1/users/` без username, возвращаетe статус 400'
         )

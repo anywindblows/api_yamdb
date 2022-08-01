@@ -5,7 +5,6 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth.tokens import default_token_generator
 
 from rest_framework.response import Response
-from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework.pagination import PageNumberPagination
 from rest_framework import permissions, status, viewsets, filters
@@ -17,8 +16,8 @@ from rest_framework.mixins import (
 )
 from rest_framework.viewsets import GenericViewSet
 
-from .permissions import IsAdmin, IsAuthorOrReadOnly, IsModerator, ReadOnly
-from .serializers import (
+from api.v1.permissions import IsAdmin, IsAuthorOrReadOnly, IsModerator, ReadOnly
+from api.v1.serializers import (
     CategorySerializer,
     CommentsSerializer,
     CreateTitleSerializer,
@@ -31,9 +30,9 @@ from .serializers import (
     UserSerializer
 )
 
-from reviews.models import Category, Comments, Genre, Review, Title
+from reviews.models import Category, Genre, Review, Title
 from users.models import User
-from .filters import TitleFilter
+from api.v1.filters import TitleFilter
 
 
 class CreateListDestroyViewSet(viewsets.ModelViewSet):
