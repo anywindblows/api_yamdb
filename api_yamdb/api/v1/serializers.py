@@ -96,13 +96,19 @@ class CommentsSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
         validators=[
-            UniqueValidator(queryset=User.objects.all())
+            UniqueValidator(
+                queryset=User.objects.all(),
+                message='Пользователь с данным "email" уже существует.'
+            )
         ]
     )
 
     username = serializers.CharField(
         validators=[
-            UniqueValidator(queryset=User.objects.all())
+            UniqueValidator(
+                queryset=User.objects.all(),
+                message='Пользователь с данным "username" уже существует.'
+            )
         ]
     )
 
