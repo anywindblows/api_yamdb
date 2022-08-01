@@ -16,7 +16,12 @@ from rest_framework.mixins import (
 )
 from rest_framework.viewsets import GenericViewSet
 
-from api.v1.permissions import IsAdmin, IsAuthorOrReadOnly, IsModerator, ReadOnly
+from api.v1.permissions import (
+    IsAdmin,
+    IsAuthorOrReadOnly,
+    IsModerator,
+    ReadOnly
+)
 from api.v1.serializers import (
     CategorySerializer,
     CommentsSerializer,
