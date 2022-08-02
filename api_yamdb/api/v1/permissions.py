@@ -9,14 +9,6 @@ class IsAdmin(permissions.BasePermission):
             or user.is_superuser
         )
 
-    def has_object_permission(self, request, view, obj):
-        user = request.user
-        return (
-            request.method in permissions.SAFE_METHODS
-            or user.is_admin
-            or user.is_superuser
-        )
-
 
 class IsModerator(permissions.BasePermission):
     def has_permission(self, request, view):

@@ -94,24 +94,6 @@ class CommentsSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(
-        validators=[
-            UniqueValidator(
-                queryset=User.objects.all(),
-                message='Пользователь с данным "email" уже существует.'
-            )
-        ]
-    )
-
-    username = serializers.CharField(
-        validators=[
-            UniqueValidator(
-                queryset=User.objects.all(),
-                message='Пользователь с данным "username" уже существует.'
-            )
-        ]
-    )
-
     class Meta:
         fields = ("username", "email", "first_name",
                   "last_name", "bio", "role")
@@ -126,26 +108,35 @@ class UserEditSerializer(serializers.ModelSerializer):
         read_only_fields = ('role',)
 
 
-class RegisterDataSerializer(serializers.ModelSerializer):
+class RegisterDataSerializer(serializers.Serializer):
     username = serializers.CharField(
-        validators=[
-            UniqueValidator(queryset=User.objects.all())
-        ]
-    )
+        max_length=150,
+        required=True
+        )
     email = serializers.EmailField(
-        validators=[
-            UniqueValidator(queryset=User.objects.all())
-        ]
-    )
+        max_length=150,
+        required=True
+        )
 
-    def validate_username(self, value):
-        if value.lower() == "me":
+    def validate_username(self, username):
+        if username.lower() == "me":
             raise serializers.ValidationError("Username 'me' is not valid")
-        return value
+        duplicated_username = User.objects.filter(
+            username=username
+        ).exists()
+        if duplicated_username:
+            raise serializers.ValidationError(
+                'Пользователь с таким именем уже зарегистрирован'
+            )
+        return username
 
-    class Meta:
-        fields = ("username", "email")
-        model = User
+    def validate_email(self, email):
+        duplicated_email = User.objects.filter(email=email).exists()
+        if duplicated_email:
+            raise serializers.ValidationError(
+                'Пользователь с таким email уже зарегистрирован'
+            )
+        return email
 
 
 class TokenSerializer(serializers.Serializer):
