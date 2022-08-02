@@ -112,11 +112,11 @@ class RegisterDataSerializer(serializers.Serializer):
     username = serializers.CharField(
         max_length=150,
         required=True
-        )
+    )
     email = serializers.EmailField(
         max_length=150,
         required=True
-        )
+    )
 
     def validate_username(self, username):
         if username.lower() == "me":
@@ -137,6 +137,9 @@ class RegisterDataSerializer(serializers.Serializer):
                 'Пользователь с таким email уже зарегистрирован'
             )
         return email
+
+    def create(self, validated_data):
+        return User.objects.create(**validated_data)
 
 
 class TokenSerializer(serializers.Serializer):
