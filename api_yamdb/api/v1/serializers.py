@@ -78,6 +78,7 @@ class ReviewsSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 'Вы уже написали отзыв к этому произведению.'
             )
+
         return data
 
 
@@ -136,9 +137,6 @@ class RegisterDataSerializer(serializers.Serializer):
                 'Пользователь с таким email уже зарегистрирован'
             )
         return email
-
-    def create(self, validated_data):
-        return User.objects.create(**validated_data)
 
 
 class TokenSerializer(serializers.Serializer):

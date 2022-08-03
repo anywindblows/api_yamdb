@@ -15,12 +15,12 @@ from rest_framework.mixins import (
     ListModelMixin
 )
 from rest_framework.viewsets import GenericViewSet
+from api_yamdb.settings import DEFAULT_FROM_EMAIL
 
 from api.v1.permissions import (
-    IsAdmin,
-    IsAuthorOrReadOnly,
-    IsModerator,
-    ReadOnly
+    AdminOnly,
+    AdminOrReadOnly,
+    IsAdminModeratorAuthorOrReadOnly,
 )
 from api.v1.serializers import (
     CategorySerializer,
@@ -40,18 +40,11 @@ from users.models import User
 from api.v1.filters import TitleFilter
 
 
-class CreateListDestroyViewSet(viewsets.ModelViewSet):
-    http_method_names = ['get', 'post', 'delete']
-    permission_classes = (IsAdmin | ReadOnly,)
-    search_fields = ['name']
-    lookup_field = 'slug'
-
-
 class CategoryViewSet(CreateModelMixin, ListModelMixin,
                       DestroyModelMixin, GenericViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = (IsAdmin | ReadOnly,)
+    permission_classes = [AdminOrReadOnly]
     pagination_class = PageNumberPagination
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
@@ -62,7 +55,7 @@ class GenresViewSet(CreateModelMixin, ListModelMixin,
                     DestroyModelMixin, GenericViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = (IsAdmin | ReadOnly,)
+    permission_classes = [AdminOrReadOnly]
     pagination_class = PageNumberPagination
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
@@ -71,7 +64,7 @@ class GenresViewSet(CreateModelMixin, ListModelMixin,
 
 class TitleViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'patch', 'delete']
-    permission_classes = (IsAdmin | ReadOnly,)
+    permission_classes = [AdminOrReadOnly]
     pagination_class = PageNumberPagination
     filter_backends = (DjangoFilterBackend, filters.SearchFilter)
     filterset_class = TitleFilter
@@ -86,7 +79,10 @@ class TitleViewSet(viewsets.ModelViewSet):
 
 class ReviewsViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'patch', 'delete']
-    permission_classes = (IsAdmin | IsModerator | IsAuthorOrReadOnly,)
+    permission_classes = [
+        IsAdminModeratorAuthorOrReadOnly,
+        permissions.IsAuthenticatedOrReadOnly
+    ]
     serializer_class = ReviewsSerializer
 
     def get_queryset(self):
@@ -100,7 +96,10 @@ class ReviewsViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'patch', 'delete']
-    permission_classes = (IsAdmin | IsModerator | IsAuthorOrReadOnly,)
+    permission_classes = [
+        IsAdminModeratorAuthorOrReadOnly,
+        permissions.IsAuthenticatedOrReadOnly
+    ]
     serializer_class = CommentsSerializer
 
     def get_queryset(self):
@@ -120,7 +119,7 @@ class UserViewSet(viewsets.ModelViewSet):
     """Класс пользователей."""
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = (IsAdmin,)
+    permission_classes = (AdminOnly,)
     search_fields = ('username',)
     lookup_field = "username"
 
@@ -139,6 +138,7 @@ class UserViewSet(viewsets.ModelViewSet):
         if request.method == "GET":
             serializer = self.get_serializer(user)
             return Response(serializer.data, status=status.HTTP_200_OK)
+
         serializer = self.get_serializer(
             user,
             data=request.data,
@@ -160,16 +160,18 @@ def register(request):
     """
     serializer = RegisterDataSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    serializer.save()
-    user = get_object_or_404(
-        User,
-        username=serializer.validated_data["username"]
+
+    user, created = User.objects.get_or_create(
+        username=serializer.validated_data["username"],
+        email=serializer.validated_data["email"],
     )
+
     confirmation_code = default_token_generator.make_token(user)
+
     send_mail(
         subject="YaMDb registration",
         message=f"Your confirmation code: {confirmation_code}",
-        from_email=None,
+        from_email=DEFAULT_FROM_EMAIL,
         recipient_list=[user.email],
     )
 
