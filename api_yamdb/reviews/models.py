@@ -98,7 +98,7 @@ class Review(models.Model):
 
     class Meta:
         verbose_name = 'Отзыв'
-        verbose_name_plural = 'Отзывы',
+        verbose_name_plural = 'Отзывы'
         unique_together = ['author', 'title']
 
     def __str__(self):
